@@ -52,13 +52,14 @@ class STAR(BaseDataset):
 
     def __getitem__(self, idx):
         vid = self.data[idx]['video_id']
+        question_id = self.data[idx]['question_id']
         qtype = self.qtype_mapping[self.data[idx]['question_id'].split('_')[0]]
         text, answer = self._get_text(idx)
         text_id, label, video_start, video_index, label_mask = self._get_text_token(text, answer)
         start, end = round(self.data[idx]['start']), round(self.data[idx]['end'])
         video, video_len = self._get_video(f'{vid}', start, end)
         return {"vid": vid, "video": video, "video_len": video_len, "text": text, "text_id": text_id, "label": label, "video_start": video_start,
-                "video_index": video_index, "label_mask": label_mask, "qid": idx, "answer": answer, "qtype": qtype}
+                "video_index": video_index, "label_mask": label_mask, "qid": idx, "question_id": question_id, "answer": answer, "qtype": qtype}
 
 
     def __len__(self):

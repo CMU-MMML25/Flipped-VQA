@@ -14,7 +14,7 @@ import timm.optim.optim_factory as optim_factory
 
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
-from engine import train_one_epoch, val_one_epoch
+from engine import train_one_epoch, val_one_epoch, val_one_epoch_output_json
 from llama import Tokenizer
 from llama_vqa import LLaMA_VQA
 from dataloader import load_data
@@ -86,7 +86,13 @@ def main(args):
     tokenizer = Tokenizer(model_path=f'{args.llama_model_path}./tokenizer.model')
     
     data_loader_val = load_data(args, tokenizer, split='val')
-
+    # Print only the keys of each batch
+    for i, batch in enumerate(data_loader_val):
+        print(f"\nBatch {i} keys:")
+        print(batch.keys())
+        # Break after examining a couple batches
+        if i >= 1:
+            break
     model = LLaMA_VQA(args)
     model.to(device)
 
@@ -122,8 +128,10 @@ def main(args):
     epoch = -1
     if args.distributed:
         data_loader_val.sampler.set_epoch(epoch)
-
-    val_stats = val_one_epoch(model_without_ddp, data_loader_val, optimizer, epoch, args=args)
+    # Specify the maximum number of samples to process (e.g., 1000)
+    max_samples = 200
+    output_json_path = f"./output_{max_samples}.json"
+    val_stats = val_one_epoch_output_json(model_without_ddp, data_loader_val, optimizer, epoch, args=args, max_samples=max_samples,output_json_path=output_json_path)
     log_stats = {**{f'val_{k}': v for k, v in val_stats.items()}}
 
     if args.output_dir and misc.is_main_process():

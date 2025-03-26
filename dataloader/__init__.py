@@ -30,6 +30,7 @@ def batch_collate(batch):
     video_len = torch.tensor([batch[i]["video_len"] for i in range(bs)], dtype=torch.long)
     text = [batch[i]["text"] for i in range(bs)]
     qid = [batch[i]["qid"] for i in range(bs)]
+    question_id = [batch[i]["question_id"] for i in range(bs)]
     qtype = torch.tensor([batch[i]['qtype'] for i in range(bs)])
     
     vqa_id = torch.stack([batch[i]['text_id']['vqa'] for i in range(bs)])
@@ -59,4 +60,4 @@ def batch_collate(batch):
 
     answer = torch.tensor([batch[i]["answer"] for i in range(bs)])
     return {"vid": vid, "video": video, "video_len": video_len, "text": text, "text_id": text_id, "label": label, "video_start": video_start,
-            "video_index": video_index, "label_mask": label_mask, "qid": qid, "answer": answer, "qtype": qtype}
+            "video_index": video_index, "label_mask": label_mask, "qid": qid, "question_id": question_id, "answer": answer, "qtype": qtype}
