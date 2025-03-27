@@ -84,7 +84,7 @@ def val_one_epoch(model: torch.nn.Module, data_loader: Iterable, optimizer: torc
     print("Averaged stats:", metric_logger)
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
 
-def val_one_epoch_output_json(model: torch.nn.Module, data_loader: Iterable, optimizer: torch.optim.Optimizer, epoch: int, args=None, max_samples=500, output_json_path=None):
+def val_one_epoch_output_json(model: torch.nn.Module, data_loader: Iterable, optimizer: torch.optim.Optimizer, epoch: int, args=None, max_samples=None, output_json_path=None):
     model.eval()
     metric_logger = misc.MetricLogger(delimiter=" ")
     metric_logger.add_meter('lr', misc.SmoothedValue(window_size=1, fmt='{value:.6f}'))
@@ -99,7 +99,7 @@ def val_one_epoch_output_json(model: torch.nn.Module, data_loader: Iterable, opt
         # Get video_ids
         video_ids = data['vid']
         question_ids = data['question_id']
-        
+        video_lens = data['video_len']
         # # Get frame indices - assuming video_len gives us usable frames
         # frame_ids_list = []
         # for i, length in enumerate(data['video_len']):
@@ -131,11 +131,11 @@ def val_one_epoch_output_json(model: torch.nn.Module, data_loader: Iterable, opt
             # question_id = f"{video_ids[i]}_{hash(question_text) % 10000}"
             
             result = {
-                # "question_id": question_id,
                 "pred_ans_idx": prediction[i].item(),
                 "correct_ans_idx": answer[i].item(),
                 "confidence": confidence_scores[i].tolist(),
                 # "frame_ids": frame_ids_list[i],
+                "video_frame_num": video_lens[i].item() if isinstance(video_lens[i], torch.Tensor ) else video_lens[i],
                 "inference_time": inference_time,
                 "question_id": question_ids[i],
                 "video_id": video_ids[i]
@@ -153,7 +153,6 @@ def val_one_epoch_output_json(model: torch.nn.Module, data_loader: Iterable, opt
         if max_samples is not None and samples_processed >= max_samples:
             print(f"Reached maximum samples ({max_samples}). Stopping evaluation.")
             break
-    
     # Save results to JSON if path is provided
     if output_json_path and misc.is_main_process():
         print(f"Saving {len(results)} predictions to {output_json_path}")
