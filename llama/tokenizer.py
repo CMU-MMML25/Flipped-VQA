@@ -39,18 +39,30 @@ class Tokenizer:
             t = t + [self.eos_id]
         return t
 
-    def encode_vqa(self, text=None, max_feats=10, split='train', answer_mapping=None, answer=None) -> List[int]:
+    def encode_vqa(self, text=None, max_feats=10, split='train', answer_mapping=None, answer=None, return_text_prompt=False) -> List[int]:
+        # Basic components
         i_text = "Instruction: Predict the answer based on the video and question.\n"
         q_text = text['q_text']
         o_text = text['o_text']
         a_text = text['a_text']
-     
-        s1 = i_text + 'Video:'
+        video_placeholder = "[VIDEO CONTENT]"
+        
+        # Create text prompt
+        s1 = i_text + 'Video: '
+        s2 = q_text + o_text + a_text
+        
+        # Full text prompts
+        if split == 'train':
+            text_prompt = s1 + video_placeholder + "\n" + s2 + answer_mapping[answer]
+        else:
+            text_prompts = []
+            for k, v in answer_mapping.items():
+                text_prompts.append(s1 + video_placeholder + "\n" + s2 + v)
+        
+        # Tokenize
         t1 = [self.bos_id] + self.sp_model.encode(s1)
         video_start = len(t1)
-
-        s2 = q_text + o_text + a_text
-
+        
         if split == 'train':
             s2 = s2 + answer_mapping[answer] 
             t2 = self.sp_model.encode(s2) + [self.eos_id]
@@ -62,7 +74,15 @@ class Tokenizer:
                 t2 = self.sp_model.encode(s2 + v) + [self.eos_id]
                 t.append(t1 + [-2 for _ in range(max_feats)] + [self.nl_id] + t2)
             prefix_index = t[answer].index(self.a_token_id) + 5
-        return t, prefix_index, video_start
+        
+        # Return full text prompt if requested
+        if return_text_prompt:
+            if split == 'train':
+                return t, prefix_index, video_start, text_prompt
+            else:
+                return t, prefix_index, video_start, text_prompts
+        else:
+            return t, prefix_index, video_start
 
     def encode_vaq(self, text=None, max_feats=10, split='train', answer_mapping=None, answer=None) -> List[int]:
         i_text = "Instruction: Predict the question based on the video and answer.\n"

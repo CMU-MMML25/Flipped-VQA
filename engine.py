@@ -100,14 +100,11 @@ def val_one_epoch_output_json(model: torch.nn.Module, data_loader: Iterable, opt
         video_ids = data['vid']
         question_ids = data['question_id']
         video_lens = data['video_len']
-        # # Get frame indices - assuming video_len gives us usable frames
-        # frame_ids_list = []
-        # for i, length in enumerate(data['video_len']):
-        #     frame_ids_list.append(list(range(length.item())))
+        texts = data['text']
+        frame_list = data['frames']
         
         answer = data['answer'].cuda()
         bsz = answer.shape[0]
-        
         with torch.no_grad():
             inference_start = time.time()
             logits = model(data, inference=True)
@@ -123,18 +120,25 @@ def val_one_epoch_output_json(model: torch.nn.Module, data_loader: Iterable, opt
         
         # Total processing time
         total_time = time.time() - batch_start_time
-        
+
         # Store prediction results
         for i in range(bsz):
-            # Create a unique question_id
-            question_text = data['text'][i]['q_text'] if 'text' in data else f"question_{len(results)}"
-            # question_id = f"{video_ids[i]}_{hash(question_text) % 10000}"
-            
+            i_text = "Instruction: Predict the answer based on the video and question.\n"
+            q_text = texts[i]['q_text']
+            o_text = texts[i]['o_text']
+            a_text = texts[i]['a_text']
+            video_placeholder = "[VIDEO CONTENT]"
+            s1 = i_text + 'Video: '
+            s2 = q_text + o_text + a_text
+            v = 'Answer: The answer is '
             result = {
                 "pred_ans_idx": prediction[i].item(),
                 "correct_ans_idx": answer[i].item(),
                 "confidence": confidence_scores[i].tolist(),
-                # "frame_ids": frame_ids_list[i],
+                "logits": avg_logits[i].tolist(),
+                # "raw_response": 
+                "prompt": s1 + video_placeholder + "\n" + s2 + v,
+                "frame_ids": frame_list[i],
                 "video_frame_num": video_lens[i].item() if isinstance(video_lens[i], torch.Tensor ) else video_lens[i],
                 "inference_time": inference_time,
                 "question_id": question_ids[i],

@@ -57,7 +57,7 @@ def batch_collate(batch):
     vaq_label_mask = torch.stack([batch[i]["label_mask"]['vaq'] for i in range(bs)])
     qav_label_mask = torch.stack([batch[i]["label_mask"]['qav'] for i in range(bs)])
     label_mask = {'vqa': vqa_label_mask, 'vaq': vaq_label_mask, 'qav': qav_label_mask}
-
+    frames = [batch[i]["frames"] for i in range(bs)]
     answer = torch.tensor([batch[i]["answer"] for i in range(bs)])
     return {"vid": vid, "video": video, "video_len": video_len, "text": text, "text_id": text_id, "label": label, "video_start": video_start,
-            "video_index": video_index, "label_mask": label_mask, "qid": qid, "question_id": question_id, "answer": answer, "qtype": qtype}
+            "video_index": video_index, "label_mask": label_mask, "qid": qid, "question_id": question_id, "answer": answer, "qtype": qtype, "frames": frames}
